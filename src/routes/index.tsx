@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   RANGES,
-  startInstantClean,
-  startSequence,
-  useLiveReadings,
+  setSystemState,
+  useSystemState,
+  readingFor,
   type MetricKey,
+  type SystemState,
 } from "@/lib/system-state";
 import { Card } from "@/components/ui/card";
 
@@ -37,30 +38,7 @@ function fmt(v: number, key: MetricKey) {
   return v.toFixed(0);
 }
 
-function ReadingRow({
-  label,
-  unit,
-  value,
-  badRange,
-}: {
-  label: string;
-  unit: string;
-  value: number;
-  badRange: boolean;
-}) {
-  return (
-    <div className="flex items-baseline justify-between border-b border-border/60 py-2 last:border-0">
-      <span className="text-sm text-muted-foreground">
-        {label} <span className="text-xs">({unit})</span>
-      </span>
-      <span
-        className={`font-mono text-lg font-bold ${badRange ? "text-destructive" : "text-accent"}`}
-      >
-        {value.toFixed(value < 1 ? 4 : 0)}
-      </span>
-    </div>
-  );
-}
+type Values = Record<MetricKey, number> | null;
 
 function ReadingsCard({
   title,
@@ -70,21 +48,24 @@ function ReadingsCard({
 }: {
   title: string;
   metrics: { key: MetricKey; label: string; unit: string }[];
-  values: Record<MetricKey, number>;
+  values: Values;
   polluted: boolean;
 }) {
+  const waiting = values === null;
   return (
     <Card className="p-5">
       <div className="mb-3 flex items-center justify-between">
         <h3 className="font-semibold">{title}</h3>
         <span
           className={`rounded px-2 py-0.5 font-mono text-xs ${
-            polluted
-              ? "bg-destructive/20 text-destructive"
-              : "bg-accent/20 text-accent"
+            waiting
+              ? "bg-muted text-muted-foreground"
+              : polluted
+                ? "bg-destructive/20 text-destructive"
+                : "bg-accent/20 text-accent"
           }`}
         >
-          {polluted ? "● UNSAFE" : "● SAFE"}
+          {waiting ? "● WAITING" : polluted ? "● UNSAFE" : "● SAFE"}
         </span>
       </div>
       <div>
@@ -98,10 +79,14 @@ function ReadingsCard({
             </span>
             <span
               className={`font-mono text-lg font-bold ${
-                polluted ? "text-destructive" : "text-accent"
+                waiting
+                  ? "text-muted-foreground"
+                  : polluted
+                    ? "text-destructive"
+                    : "text-accent"
               }`}
             >
-              {fmt(values[m.key], m.key)}
+              {waiting ? "—" : fmt(values![m.key], m.key)}
             </span>
           </div>
         ))}
@@ -110,49 +95,83 @@ function ReadingsCard({
   );
 }
 
+function snapshotFor(s: SystemState): Record<MetricKey, number> {
+  const keys: MetricKey[] = ["SO2", "NOx", "PM25", "CO2", "TDS", "BOD", "COD", "HM"];
+  const out = {} as Record<MetricKey, number>;
+  keys.forEach((k) => (out[k] = readingFor(s, k)));
+  return out;
+}
+
 function Index() {
-  const { state, values } = useLiveReadings(2000);
+  const state = useSystemState();
   const btnRef = useRef<HTMLButtonElement>(null);
 
-  // "Before" = polluted snapshot (frozen high values for reference)
-  const beforeValues = {
-    SO2: 920,
-    NOx: 1180,
-    PM25: 11200,
-    CO2: 815,
-    TDS: 2450,
-    BOD: 1050,
-    COD: 1650,
-    HM: 0.18,
-  } as Record<MetricKey, number>;
+  // null until first click
+  const [beforeValues, setBeforeValues] = useState<Values>(null);
+  const [afterValues, setAfterValues] = useState<Values>(null);
+  // "before" side state: POLLUTED (right click) or CLEAN (left click)
+  const [beforeKind, setBeforeKind] = useState<"POLLUTED" | "CLEAN" | null>(null);
+  const [started, setStarted] = useState(false);
+
+  // Live update after-values every 2s based on current global state
+  useEffect(() => {
+    if (!started) return;
+    setAfterValues(snapshotFor(state));
+    const id = setInterval(() => setAfterValues(snapshotFor(state)), 2000);
+    return () => clearInterval(id);
+  }, [state, started]);
+
+  // Live update before-values too (so they look "live" but stay in the same band)
+  useEffect(() => {
+    if (!started || !beforeKind) return;
+    setBeforeValues(snapshotFor(beforeKind));
+    const id = setInterval(() => setBeforeValues(snapshotFor(beforeKind)), 2000);
+    return () => clearInterval(id);
+  }, [beforeKind, started]);
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     const rect = btnRef.current!.getBoundingClientRect();
     const x = e.clientX - rect.left;
-    if (x < rect.width / 2) {
-      startInstantClean();
-    } else {
-      startSequence();
-    }
+    const rightSide = x >= rect.width / 2;
+
+    // Reset
+    setStarted(false);
+    setBeforeValues(null);
+    setAfterValues(null);
+
+    // Tiny delay so the "waiting" state is visible on every click
+    setTimeout(() => {
+      setStarted(true);
+      if (rightSide) {
+        // Before BAD, after CLEAN
+        setBeforeKind("POLLUTED");
+        setSystemState("CLEAN");
+      } else {
+        // Both clean
+        setBeforeKind("CLEAN");
+        setSystemState("CLEAN");
+      }
+    }, 250);
   };
 
-  const statusLabel =
-    state === "CLEAN"
+  const statusLabel = !started
+    ? "STANDBY"
+    : state === "CLEAN"
       ? "ACTIVE"
       : state === "FILTERING"
         ? "PURIFYING"
-        : state === "POLLUTED"
-          ? "ALERT"
-          : "STANDBY";
+        : "ALERT";
 
-  const statusColor =
-    state === "CLEAN"
+  const statusColor = !started
+    ? "text-muted-foreground"
+    : state === "CLEAN"
       ? "text-accent"
       : state === "FILTERING"
         ? "text-chart-4"
-        : state === "POLLUTED"
-          ? "text-destructive"
-          : "text-muted-foreground";
+        : "text-destructive";
+
+  const beforePolluted = beforeKind === "POLLUTED";
+  const afterPolluted = state === "POLLUTED";
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8">
@@ -179,32 +198,26 @@ function Index() {
         >
           ▶ Start System
           <span className="mt-1 block text-[10px] font-normal tracking-normal text-muted-foreground">
-            (click anywhere)
+            (each click resets the readings)
           </span>
         </button>
         <p className="mt-3 text-xs text-muted-foreground">
-          Status updates live every 2 seconds.
+          Readings update live every 2 seconds after you start.
         </p>
       </Card>
 
       <div className="grid gap-6 md:grid-cols-2">
         <div>
-          <h2 className="mb-3 font-mono text-sm uppercase tracking-wider text-destructive">
+          <h2
+            className={`mb-3 font-mono text-sm uppercase tracking-wider ${
+              beforePolluted ? "text-destructive" : "text-accent"
+            }`}
+          >
             ◀ Before Filtration
           </h2>
           <div className="space-y-4">
-            <ReadingsCard
-              title="Air Emissions"
-              metrics={AIR}
-              values={beforeValues}
-              polluted
-            />
-            <ReadingsCard
-              title="Water & Liquid Waste"
-              metrics={WATER}
-              values={beforeValues}
-              polluted
-            />
+            <ReadingsCard title="Air Emissions" metrics={AIR} values={beforeValues} polluted={beforePolluted} />
+            <ReadingsCard title="Water & Liquid Waste" metrics={WATER} values={beforeValues} polluted={beforePolluted} />
           </div>
         </div>
 
@@ -213,18 +226,8 @@ function Index() {
             After Filtration ▶
           </h2>
           <div className="space-y-4">
-            <ReadingsCard
-              title="Air Emissions"
-              metrics={AIR}
-              values={values}
-              polluted={state === "POLLUTED"}
-            />
-            <ReadingsCard
-              title="Water & Liquid Waste"
-              metrics={WATER}
-              values={values}
-              polluted={state === "POLLUTED"}
-            />
+            <ReadingsCard title="Air Emissions" metrics={AIR} values={afterValues} polluted={afterPolluted} />
+            <ReadingsCard title="Water & Liquid Waste" metrics={WATER} values={afterValues} polluted={afterPolluted} />
           </div>
         </div>
       </div>
@@ -253,10 +256,7 @@ function Index() {
       <p className="mt-6 text-center font-mono text-[10px] text-muted-foreground">
         Safe limits referenced from WHO / EPA · UNECE 2024
       </p>
-      {/* Reference range for compliance gate */}
-      <span className="hidden">
-        {Object.values(RANGES.CLEAN).flat().join(",")}
-      </span>
+      <span className="hidden">{Object.values(RANGES.CLEAN).flat().join(",")}</span>
     </main>
   );
 }
