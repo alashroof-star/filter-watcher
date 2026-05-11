@@ -102,76 +102,77 @@ function snapshotFor(s: SystemState): Record<MetricKey, number> {
   return out;
 }
 
-function Index() {
-  const state = useSystemState();
-  const btnRef = useRef<HTMLButtonElement>(null);
+type Phase = "IDLE" | "MEASURING_BEFORE" | "FILTERING" | "DONE";
 
-  // null until first click
+function Index() {
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
   const [beforeValues, setBeforeValues] = useState<Values>(null);
   const [afterValues, setAfterValues] = useState<Values>(null);
-  // "before" side state: POLLUTED (right click) or CLEAN (left click)
   const [beforeKind, setBeforeKind] = useState<"POLLUTED" | "CLEAN" | null>(null);
-  const [started, setStarted] = useState(false);
+  const [phase, setPhase] = useState<Phase>("IDLE");
 
-  // Live update after-values every 2s based on current global state
   useEffect(() => {
-    if (!started) return;
-    setAfterValues(snapshotFor(state));
-    const id = setInterval(() => setAfterValues(snapshotFor(state)), 2000);
-    return () => clearInterval(id);
-  }, [state, started]);
-
-  // Live update before-values too (so they look "live" but stay in the same band)
-  useEffect(() => {
-    if (!started || !beforeKind) return;
-    setBeforeValues(snapshotFor(beforeKind));
-    const id = setInterval(() => setBeforeValues(snapshotFor(beforeKind)), 2000);
-    return () => clearInterval(id);
-  }, [beforeKind, started]);
+    return () => {
+      timersRef.current.forEach(clearTimeout);
+    };
+  }, []);
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     const rect = btnRef.current!.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const rightSide = x >= rect.width / 2;
+    const beforeK: "POLLUTED" | "CLEAN" = rightSide ? "POLLUTED" : "CLEAN";
 
-    // Reset
-    setStarted(false);
+    // Reset everything
+    timersRef.current.forEach(clearTimeout);
+    timersRef.current = [];
     setBeforeValues(null);
     setAfterValues(null);
+    setBeforeKind(beforeK);
+    setPhase("MEASURING_BEFORE");
+    setSystemState(rightSide ? "POLLUTED" : "CLEAN");
 
-    // Tiny delay so the "waiting" state is visible on every click
-    setTimeout(() => {
-      setStarted(true);
-      if (rightSide) {
-        // Before BAD, after CLEAN
-        setBeforeKind("POLLUTED");
+    // Step 1: after 3s, reveal BEFORE readings (frozen)
+    timersRef.current.push(
+      setTimeout(() => {
+        setBeforeValues(snapshotFor(beforeK));
+        setPhase("FILTERING");
+        setSystemState("FILTERING");
+      }, 3000),
+    );
+
+    // Step 2: after 3s + 8s = 11s total, reveal AFTER readings (always clean, frozen)
+    timersRef.current.push(
+      setTimeout(() => {
+        setAfterValues(snapshotFor("CLEAN"));
+        setPhase("DONE");
         setSystemState("CLEAN");
-      } else {
-        // Both clean
-        setBeforeKind("CLEAN");
-        setSystemState("CLEAN");
-      }
-    }, 250);
+      }, 11000),
+    );
   };
 
-  const statusLabel = !started
-    ? "STANDBY"
-    : state === "CLEAN"
-      ? "ACTIVE"
-      : state === "FILTERING"
-        ? "PURIFYING"
-        : "ALERT";
+  const statusLabel =
+    phase === "IDLE"
+      ? "STANDBY"
+      : phase === "MEASURING_BEFORE"
+        ? "MEASURING…"
+        : phase === "FILTERING"
+          ? "PURIFYING…"
+          : "DONE — CLEAN";
 
-  const statusColor = !started
-    ? "text-muted-foreground"
-    : state === "CLEAN"
-      ? "text-accent"
-      : state === "FILTERING"
-        ? "text-chart-4"
-        : "text-destructive";
+  const statusColor =
+    phase === "IDLE"
+      ? "text-muted-foreground"
+      : phase === "MEASURING_BEFORE"
+        ? "text-destructive"
+        : phase === "FILTERING"
+          ? "text-chart-4"
+          : "text-accent";
 
   const beforePolluted = beforeKind === "POLLUTED";
-  const afterPolluted = state === "POLLUTED";
+  const afterPolluted = false;
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8">
