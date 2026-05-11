@@ -1,20 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import {
-  RANGES,
-  setSystemState,
-  useSystemState,
-  readingFor,
-  type MetricKey,
-  type SystemState,
-} from "@/lib/system-state";
+import { readingFor, type MetricKey, type SystemState } from "@/lib/system-state";
 import { Card } from "@/components/ui/card";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Overview — Filter Fighters Dashboard" },
-      { name: "description", content: "Live system overview for the Filter Fighters air & water purification system." },
+      { title: "Filter Fighters — Overview" },
+      { name: "description", content: "Air & water purification monitoring." },
     ],
   }),
   component: Index,
@@ -34,8 +27,7 @@ const WATER: { key: MetricKey; label: string; unit: string }[] = [
 ];
 
 function fmt(v: number, key: MetricKey) {
-  if (key === "HM") return v.toFixed(4);
-  return v.toFixed(0);
+  return key === "HM" ? v.toFixed(4) : v.toFixed(0);
 }
 
 type Values = Record<MetricKey, number> | null;
@@ -53,37 +45,33 @@ function ReadingsCard({
 }) {
   const waiting = values === null;
   return (
-    <Card className="p-5">
-      <div className="mb-3 flex items-center justify-between">
-        <h3 className="font-semibold">{title}</h3>
+    <Card className="p-4">
+      <div className="mb-2 flex items-center justify-between">
+        <h3 className="text-sm font-semibold">{title}</h3>
         <span
-          className={`rounded px-2 py-0.5 font-mono text-xs ${
+          className={`rounded px-2 py-0.5 text-xs ${
             waiting
               ? "bg-muted text-muted-foreground"
               : polluted
-                ? "bg-destructive/20 text-destructive"
-                : "bg-accent/20 text-accent"
+                ? "bg-destructive/10 text-destructive"
+                : "bg-primary/10 text-primary"
           }`}
         >
-          {waiting ? "● WAITING" : polluted ? "● UNSAFE" : "● SAFE"}
+          {waiting ? "waiting" : polluted ? "unsafe" : "safe"}
         </span>
       </div>
       <div>
         {metrics.map((m) => (
           <div
             key={m.key}
-            className="flex items-baseline justify-between border-b border-border/60 py-2 last:border-0"
+            className="flex items-baseline justify-between border-b border-border/60 py-1.5 last:border-0"
           >
             <span className="text-sm text-muted-foreground">
               {m.label} <span className="text-xs">({m.unit})</span>
             </span>
             <span
-              className={`font-mono text-lg font-bold ${
-                waiting
-                  ? "text-muted-foreground"
-                  : polluted
-                    ? "text-destructive"
-                    : "text-accent"
+              className={`font-mono text-base font-semibold ${
+                waiting ? "text-muted-foreground" : polluted ? "text-destructive" : "text-primary"
               }`}
             >
               {waiting ? "—" : fmt(values![m.key], m.key)}
@@ -104,6 +92,9 @@ function snapshotFor(s: SystemState): Record<MetricKey, number> {
 
 type Phase = "IDLE" | "MEASURING_BEFORE" | "FILTERING" | "DONE";
 
+const BEFORE_DELAY_MS = 15000;
+const AFTER_DELAY_MS = 60000;
+
 function Index() {
   const btnRef = useRef<HTMLButtonElement>(null);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -114,150 +105,88 @@ function Index() {
   const [phase, setPhase] = useState<Phase>("IDLE");
 
   useEffect(() => {
-    return () => {
-      timersRef.current.forEach(clearTimeout);
-    };
+    return () => timersRef.current.forEach(clearTimeout);
   }, []);
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     const rect = btnRef.current!.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const rightSide = x >= rect.width / 2;
+    const rightSide = e.clientX - rect.left >= rect.width / 2;
     const beforeK: "POLLUTED" | "CLEAN" = rightSide ? "POLLUTED" : "CLEAN";
 
-    // Reset everything
     timersRef.current.forEach(clearTimeout);
     timersRef.current = [];
     setBeforeValues(null);
     setAfterValues(null);
     setBeforeKind(beforeK);
     setPhase("MEASURING_BEFORE");
-    setSystemState(rightSide ? "POLLUTED" : "CLEAN");
 
-    // Step 1: after 3s, reveal BEFORE readings (frozen)
     timersRef.current.push(
       setTimeout(() => {
         setBeforeValues(snapshotFor(beforeK));
         setPhase("FILTERING");
-        setSystemState("FILTERING");
-      }, 3000),
+      }, BEFORE_DELAY_MS),
     );
 
-    // Step 2: after 3s + 8s = 11s total, reveal AFTER readings (always clean, frozen)
     timersRef.current.push(
       setTimeout(() => {
         setAfterValues(snapshotFor("CLEAN"));
         setPhase("DONE");
-        setSystemState("CLEAN");
-      }, 11000),
+      }, BEFORE_DELAY_MS + AFTER_DELAY_MS),
     );
   };
 
   const statusLabel =
     phase === "IDLE"
-      ? "STANDBY"
+      ? "Standby"
       : phase === "MEASURING_BEFORE"
-        ? "MEASURING…"
+        ? "Measuring…"
         : phase === "FILTERING"
-          ? "PURIFYING…"
-          : "DONE — CLEAN";
-
-  const statusColor =
-    phase === "IDLE"
-      ? "text-muted-foreground"
-      : phase === "MEASURING_BEFORE"
-        ? "text-destructive"
-        : phase === "FILTERING"
-          ? "text-chart-4"
-          : "text-accent";
+          ? "Purifying…"
+          : "Done";
 
   const beforePolluted = beforeKind === "POLLUTED";
-  const afterPolluted = false;
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8">
-      <section className="mb-6 text-center">
-        <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-          Sustainable Cement Factory // IoT Ecosystem
-        </p>
-        <h1 className="mt-2 text-3xl font-bold sm:text-4xl">Filter Fighters Control Center</h1>
+    <main className="mx-auto max-w-4xl px-4 py-8">
+      <header className="mb-6 text-center">
+        <h1 className="text-2xl font-bold sm:text-3xl">Filter Fighters</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Air purification · Water filtration · Smart irrigation
+          Air & water purification monitor
         </p>
-      </section>
+      </header>
 
-      <Card className="mb-6 p-6 text-center">
-        <div className="mb-2 font-mono text-xs uppercase text-muted-foreground">
-          System Status
-        </div>
-        <div className={`text-4xl font-black tracking-wider ${statusColor}`}>{statusLabel}</div>
+      <Card className="mb-6 p-5 text-center">
+        <div className="text-xs uppercase tracking-wide text-muted-foreground">Status</div>
+        <div className="mt-1 text-2xl font-bold">{statusLabel}</div>
 
         <button
           ref={btnRef}
           onClick={handleClick}
-          className="group relative mx-auto mt-5 block w-full max-w-md overflow-hidden rounded-lg border-2 border-accent bg-accent/10 px-6 py-5 font-mono text-lg font-bold uppercase tracking-widest text-accent transition-all hover:bg-accent/20 active:scale-[0.99]"
+          className="mx-auto mt-4 block w-full max-w-sm rounded-md border border-primary bg-primary px-6 py-3 text-base font-semibold text-primary-foreground transition hover:opacity-90 active:scale-[0.99]"
         >
-          ▶ Start System
-          <span className="mt-1 block text-[10px] font-normal tracking-normal text-muted-foreground">
-            (each click resets the readings)
-          </span>
+          Start System
         </button>
-        <p className="mt-3 text-xs text-muted-foreground">
-          Readings update live every 2 seconds after you start.
+        <p className="mt-2 text-xs text-muted-foreground">
+          Before readings appear after ~15s, after readings ~1 min later.
         </p>
       </Card>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <div>
-          <h2
-            className={`mb-3 font-mono text-sm uppercase tracking-wider ${
-              beforePolluted ? "text-destructive" : "text-accent"
-            }`}
-          >
-            ◀ Before Filtration
-          </h2>
-          <div className="space-y-4">
-            <ReadingsCard title="Air Emissions" metrics={AIR} values={beforeValues} polluted={beforePolluted} />
-            <ReadingsCard title="Water & Liquid Waste" metrics={WATER} values={beforeValues} polluted={beforePolluted} />
+      <div className="grid gap-4 md:grid-cols-2">
+        <section>
+          <h2 className="mb-2 text-sm font-semibold text-muted-foreground">Before</h2>
+          <div className="space-y-3">
+            <ReadingsCard title="Air" metrics={AIR} values={beforeValues} polluted={beforePolluted} />
+            <ReadingsCard title="Water" metrics={WATER} values={beforeValues} polluted={beforePolluted} />
           </div>
-        </div>
-
-        <div>
-          <h2 className="mb-3 font-mono text-sm uppercase tracking-wider text-accent">
-            After Filtration ▶
-          </h2>
-          <div className="space-y-4">
-            <ReadingsCard title="Air Emissions" metrics={AIR} values={afterValues} polluted={afterPolluted} />
-            <ReadingsCard title="Water & Liquid Waste" metrics={WATER} values={afterValues} polluted={afterPolluted} />
+        </section>
+        <section>
+          <h2 className="mb-2 text-sm font-semibold text-muted-foreground">After</h2>
+          <div className="space-y-3">
+            <ReadingsCard title="Air" metrics={AIR} values={afterValues} polluted={false} />
+            <ReadingsCard title="Water" metrics={WATER} values={afterValues} polluted={false} />
           </div>
-        </div>
+        </section>
       </div>
-
-      <section className="mt-8 grid gap-4 md:grid-cols-3">
-        <Card className="p-4">
-          <h3 className="font-semibold">🌫 Air Purification</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Captures SO₂, NOx and particulates using activated carbon adsorption.
-          </p>
-        </Card>
-        <Card className="p-4">
-          <h3 className="font-semibold">💧 Water Filtration</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Multi-stage sponge, mesh and sand filters drop TDS, BOD and COD.
-          </p>
-        </Card>
-        <Card className="p-4">
-          <h3 className="font-semibold">🌱 Smart Irrigation</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Recycled water reused safely, monitored by soil-moisture sensors.
-          </p>
-        </Card>
-      </section>
-
-      <p className="mt-6 text-center font-mono text-[10px] text-muted-foreground">
-        Safe limits referenced from WHO / EPA · UNECE 2024
-      </p>
-      <span className="hidden">{Object.values(RANGES.CLEAN).flat().join(",")}</span>
     </main>
   );
 }
