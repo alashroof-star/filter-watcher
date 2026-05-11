@@ -9,7 +9,6 @@ import {
 } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
-import { NavBar } from "@/components/NavBar";
 
 function NotFoundComponent() {
   return (
