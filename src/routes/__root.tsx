@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
+import { NavBar } from "@/components/NavBar";
 
 function NotFoundComponent() {
   return (
@@ -72,11 +73,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Filter Fighters — IoT Ecosystem Dashboard" },
+      { name: "description", content: "Industrial monitoring dashboard for the Filter Fighters cement factory air & water purification system." },
+      { name: "author", content: "UNO Team" },
+      { property: "og:title", content: "Filter Fighters Dashboard" },
+      { property: "og:description", content: "Real-time air and water purification monitoring." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
@@ -113,7 +114,10 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
+      <div className="min-h-screen bg-background text-foreground">
+        <NavBar />
+        <Outlet />
+      </div>
     </QueryClientProvider>
   );
 }
