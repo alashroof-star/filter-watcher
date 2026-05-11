@@ -9,10 +9,16 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SpecsRouteImport } from './routes/specs'
 import { Route as FiltersRouteImport } from './routes/filters'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as IndexRouteImport } from './routes/index'
 
+const SpecsRoute = SpecsRouteImport.update({
+  id: '/specs',
+  path: '/specs',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FiltersRoute = FiltersRouteImport.update({
   id: '/filters',
   path: '/filters',
@@ -33,34 +39,45 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/analytics': typeof AnalyticsRoute
   '/filters': typeof FiltersRoute
+  '/specs': typeof SpecsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/analytics': typeof AnalyticsRoute
   '/filters': typeof FiltersRoute
+  '/specs': typeof SpecsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/analytics': typeof AnalyticsRoute
   '/filters': typeof FiltersRoute
+  '/specs': typeof SpecsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/analytics' | '/filters'
+  fullPaths: '/' | '/analytics' | '/filters' | '/specs'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/analytics' | '/filters'
-  id: '__root__' | '/' | '/analytics' | '/filters'
+  to: '/' | '/analytics' | '/filters' | '/specs'
+  id: '__root__' | '/' | '/analytics' | '/filters' | '/specs'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AnalyticsRoute: typeof AnalyticsRoute
   FiltersRoute: typeof FiltersRoute
+  SpecsRoute: typeof SpecsRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/specs': {
+      id: '/specs'
+      path: '/specs'
+      fullPath: '/specs'
+      preLoaderRoute: typeof SpecsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/filters': {
       id: '/filters'
       path: '/filters'
@@ -89,6 +106,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AnalyticsRoute: AnalyticsRoute,
   FiltersRoute: FiltersRoute,
+  SpecsRoute: SpecsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
