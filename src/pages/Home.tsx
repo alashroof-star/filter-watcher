@@ -146,7 +146,7 @@ function Home() {
     >
       <main className="min-h-screen px-4 py-8 relative w-[70vw] max-w-5xl mx-auto">
         <header className="mb-6 text-center">
-          <h1 className="text-2xl font-bold sm:text-3xl">Filter Fighters</h1>
+          <h1 className="text-4xl font-bold sm:text-5xl">Filter Fighters</h1>
           <p className="mt-1 text-sm text-muted-foreground">Air & water purification monitor</p>
         </header>
 
@@ -168,7 +168,7 @@ function Home() {
 
         <div className="grid gap-4 md:grid-cols-2">
           <section>
-            <h2 className="mb-2 text-sm font-semibold text-muted-foreground">Before</h2>
+            <h2 className="mb-2 text-sm font-bold text-white">Before</h2>
             <div className="space-y-3">
               <ReadingsCard
                 title="Air"
@@ -185,7 +185,7 @@ function Home() {
             </div>
           </section>
           <section>
-            <h2 className="mb-2 text-sm font-semibold text-muted-foreground">After</h2>
+            <h2 className="mb-2 text-sm font-bold text-white">After</h2>
             <div className="space-y-3">
               <ReadingsCard title="Air" metrics={AIR} values={afterValues} polluted={false} />
               <ReadingsCard title="Water" metrics={WATER} values={afterValues} polluted={false} />
