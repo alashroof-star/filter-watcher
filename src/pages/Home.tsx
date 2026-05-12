@@ -146,8 +146,8 @@ function Home() {
     >
       <main className="min-h-screen px-4 py-8 relative w-[70vw] max-w-5xl mx-auto">
         <header className="mb-6 text-center">
-          <h1 className="text-4xl font-bold sm:text-5xl text-neutral-300">Filter Fighters</h1>
-          <p className="mt-1 text-sm text-neutral-400">Air & water purification monitor</p>
+          <h1 className="text-4xl font-bold sm:text-5xl text-[#FCA311]">Filter Fighters</h1>
+          <p className="mt-1 text-sm text-white">Air & water purification monitor</p>
         </header>
 
         <Card className="mb-6 p-5 text-center">
