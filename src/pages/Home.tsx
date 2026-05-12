@@ -168,7 +168,7 @@ function Home() {
 
         <div className="grid gap-4 md:grid-cols-2">
           <section>
-            <h2 className="mb-2 text-sm font-bold text-white">Before</h2>
+            <h2 className="mb-2 text-lg font-bold text-white">Before</h2>
             <div className="space-y-3">
               <ReadingsCard
                 title="Air"
@@ -185,7 +185,7 @@ function Home() {
             </div>
           </section>
           <section>
-            <h2 className="mb-2 text-sm font-bold text-white">After</h2>
+            <h2 className="mb-2 text-lg font-bold text-white">After</h2>
             <div className="space-y-3">
               <ReadingsCard title="Air" metrics={AIR} values={afterValues} polluted={false} />
               <ReadingsCard title="Water" metrics={WATER} values={afterValues} polluted={false} />
