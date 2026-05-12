@@ -1,17 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { readingFor, type MetricKey, type SystemState } from "@/lib/system-state";
 import { Card } from "@/components/ui/card";
-
-export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "Filter Fighters — Overview" },
-      { name: "description", content: "Air & water purification monitoring." },
-    ],
-  }),
-  component: Index,
-});
 
 const AIR: { key: MetricKey; label: string; unit: string }[] = [
   { key: "SO2", label: "SO₂", unit: "mg/Nm³" },
@@ -95,7 +84,7 @@ type Phase = "IDLE" | "MEASURING_BEFORE" | "FILTERING" | "DONE";
 const BEFORE_DELAY_MS = 15000;
 const AFTER_DELAY_MS = 60000;
 
-function Index() {
+function Home() {
   const btnRef = useRef<HTMLButtonElement>(null);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -150,9 +139,7 @@ function Index() {
     <main className="mx-auto max-w-4xl px-4 py-8">
       <header className="mb-6 text-center">
         <h1 className="text-2xl font-bold sm:text-3xl">Filter Fighters</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Air & water purification monitor
-        </p>
+        <p className="mt-1 text-sm text-muted-foreground">Air & water purification monitor</p>
       </header>
 
       <Card className="mb-6 p-5 text-center">
@@ -175,8 +162,18 @@ function Index() {
         <section>
           <h2 className="mb-2 text-sm font-semibold text-muted-foreground">Before</h2>
           <div className="space-y-3">
-            <ReadingsCard title="Air" metrics={AIR} values={beforeValues} polluted={beforePolluted} />
-            <ReadingsCard title="Water" metrics={WATER} values={beforeValues} polluted={beforePolluted} />
+            <ReadingsCard
+              title="Air"
+              metrics={AIR}
+              values={beforeValues}
+              polluted={beforePolluted}
+            />
+            <ReadingsCard
+              title="Water"
+              metrics={WATER}
+              values={beforeValues}
+              polluted={beforePolluted}
+            />
           </div>
         </section>
         <section>
@@ -190,3 +187,5 @@ function Index() {
     </main>
   );
 }
+
+export default Home;
