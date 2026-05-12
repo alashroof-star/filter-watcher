@@ -136,55 +136,64 @@ function Home() {
   const beforePolluted = beforeKind === "POLLUTED";
 
   return (
-    <main className="mx-auto max-w-4xl px-4 py-8">
-      <header className="mb-6 text-center">
-        <h1 className="text-2xl font-bold sm:text-3xl">Filter Fighters</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Air & water purification monitor</p>
-      </header>
+    <div
+      style={{
+        backgroundImage: `url('/bg-image.jpg')`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundAttachment: "fixed",
+      }}
+    >
+      <main className="min-h-screen px-4 py-8 relative w-[70vw] max-w-5xl mx-auto">
+        <header className="mb-6 text-center">
+          <h1 className="text-2xl font-bold sm:text-3xl">Filter Fighters</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Air & water purification monitor</p>
+        </header>
 
-      <Card className="mb-6 p-5 text-center">
-        <div className="text-xs uppercase tracking-wide text-muted-foreground">Status</div>
-        <div className="mt-1 text-2xl font-bold">{statusLabel}</div>
+        <Card className="mb-6 p-5 text-center">
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">Status</div>
+          <div className="mt-1 text-2xl font-bold">{statusLabel}</div>
 
-        <button
-          ref={btnRef}
-          onClick={handleClick}
-          className="mx-auto mt-4 block w-full max-w-sm rounded-md border border-primary bg-primary px-6 py-3 text-base font-semibold text-primary-foreground transition hover:opacity-90 active:scale-[0.99]"
-        >
-          Start System
-        </button>
-        <p className="mt-2 text-xs text-muted-foreground">
-          Before readings appear after ~15s, after readings ~1 min later.
-        </p>
-      </Card>
+          <button
+            ref={btnRef}
+            onClick={handleClick}
+            className="mx-auto mt-4 block w-full max-w-sm rounded-md border border-primary bg-primary px-6 py-3 text-base font-semibold text-primary-foreground transition hover:opacity-90 active:scale-[0.99]"
+          >
+            Start System
+          </button>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Before readings appear after ~15s, after readings ~1 min later.
+          </p>
+        </Card>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <section>
-          <h2 className="mb-2 text-sm font-semibold text-muted-foreground">Before</h2>
-          <div className="space-y-3">
-            <ReadingsCard
-              title="Air"
-              metrics={AIR}
-              values={beforeValues}
-              polluted={beforePolluted}
-            />
-            <ReadingsCard
-              title="Water"
-              metrics={WATER}
-              values={beforeValues}
-              polluted={beforePolluted}
-            />
-          </div>
-        </section>
-        <section>
-          <h2 className="mb-2 text-sm font-semibold text-muted-foreground">After</h2>
-          <div className="space-y-3">
-            <ReadingsCard title="Air" metrics={AIR} values={afterValues} polluted={false} />
-            <ReadingsCard title="Water" metrics={WATER} values={afterValues} polluted={false} />
-          </div>
-        </section>
-      </div>
-    </main>
+        <div className="grid gap-4 md:grid-cols-2">
+          <section>
+            <h2 className="mb-2 text-sm font-semibold text-muted-foreground">Before</h2>
+            <div className="space-y-3">
+              <ReadingsCard
+                title="Air"
+                metrics={AIR}
+                values={beforeValues}
+                polluted={beforePolluted}
+              />
+              <ReadingsCard
+                title="Water"
+                metrics={WATER}
+                values={beforeValues}
+                polluted={beforePolluted}
+              />
+            </div>
+          </section>
+          <section>
+            <h2 className="mb-2 text-sm font-semibold text-muted-foreground">After</h2>
+            <div className="space-y-3">
+              <ReadingsCard title="Air" metrics={AIR} values={afterValues} polluted={false} />
+              <ReadingsCard title="Water" metrics={WATER} values={afterValues} polluted={false} />
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
   );
 }
 

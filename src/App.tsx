@@ -4,12 +4,10 @@ import "./styles.css";
 
 function App() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </div>
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   );
 }
 
